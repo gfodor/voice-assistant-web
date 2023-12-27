@@ -88,6 +88,8 @@ export default function page() {
           body: JSON.stringify(data),
         });
 
+        currentState = BACKGROUND_ANIMATION_STATES.WAITING;
+
         if (!response.ok) {
           throw new Error("Network response was not ok.");
         }
@@ -202,9 +204,7 @@ export default function page() {
 
                     // Convert to speech
                     playAudio(res.data.message);
-                    currentState = BACKGROUND_ANIMATION_STATES.WAITING;
                     const videoEl = document.querySelector("video")
-                    if (videoEl) videoEl.style.display = "none"
 
                     document.body.style.backgroundColor = "white";
                   };
@@ -225,7 +225,6 @@ export default function page() {
       }
 
       mediaRecorder.start();
-      document.body.style.backgroundColor = "red";
     })
 
     document.addEventListener("mouseup", async () => {
