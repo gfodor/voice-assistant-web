@@ -60,10 +60,6 @@ export default function page() {
       }
     };
 
-    const handlePlayButtonClick = (input: string) => {
-      playAudio(input);
-    };
-
     document.addEventListener("mousedown", async () => {
       if (!mediaRecorder) {
         await new Promise(res => {
@@ -79,6 +75,7 @@ export default function page() {
               };
               newMediaRecorder.onstop = async () => {
                 console.time("Entire function");
+                document.body.style.backgroundColor = "green";
 
                 const audioBlob = new Blob(chunks, { type: "audio/webm" });
                 const audioUrl = URL.createObjectURL(audioBlob);
@@ -124,7 +121,8 @@ export default function page() {
                     threadId = res.data.thread_id
 
                     // Convert to speech
-                    handlePlayButtonClick(res.data.message);
+                    playAudio(res.data.message);
+                    document.body.style.backgroundColor = "white";
                   };
                 } catch (error) {
                   console.error(error);
@@ -143,6 +141,7 @@ export default function page() {
       }
 
       mediaRecorder.start();
+      document.body.style.backgroundColor = "red";
     })
 
     document.addEventListener("mouseup", async () => {
