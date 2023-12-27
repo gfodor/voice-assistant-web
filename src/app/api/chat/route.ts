@@ -13,13 +13,38 @@ const threadMap = new Map();
 import { NextResponse } from "next/server";
 
 export async function POST(req: any) {
-  let { content, thread_id } = await req.json();
+  let { content, thread_id, image_url } = await req.json();
 
   if (!thread_id) {
     thread_id = (await openai.beta.threads.create()).id;
   }
 
-  await openai.beta.threads.messages.create(thread_id, { role: "user", content })
+  let imageSuffix: string = "";
+
+  if (image_url) {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      max_tokens: 300,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Please describe in detail what is in this image in direct language, so this text can be passed along properly to another image model for analysis." },
+            {
+              type: "image_url",
+              image_url: {
+                "url": image_url
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    imageSuffix = "\n\nIMAGE: " + response.choices[0].message.content;
+  }
+
+  await openai.beta.threads.messages.create(thread_id, { role: "user", content: content + imageSuffix })
 
   let run = await openai.beta.threads.runs.create(thread_id, { assistant_id: "asst_NjKxDodlDYJrchNdqWVa2NSW" })
 
