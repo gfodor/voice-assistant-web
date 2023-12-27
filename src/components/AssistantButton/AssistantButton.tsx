@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
 let threadId = ""
+let mediaRecorder:MediaRecorder
 
 // This is the main component of our application
 export default function AssistantButton() {
@@ -80,14 +81,13 @@ export default function AssistantButton() {
   // Define state variables for the result, recording status, and media recorder
   const [result, setResult] = useState();
   const [recording, setRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
   // This array will hold the audio data
   let chunks: any = [];
   // This useEffect hook sets up the media recorder when the component mounts
 
   // Function to start recording
   const startRecording = () => {
-    if (mediaRecorder && mediaRecorderInitialized) {
+    if (mediaRecorder) {
       //@ts-ignore
 
       mediaRecorder.start();
@@ -126,7 +126,12 @@ export default function AssistantButton() {
   return (
     <div>
       <motion.div
-        onClick={() => {
+        onClick={async () => {
+          const granted = (await navigator.permissions.query({
+            // @ts-ignore
+            name: "microphone",
+          })).state === "granted";
+
           if (typeof window !== "undefined" && !mediaRecorderInitialized) {
             // Set the init state to true, so we don't init on every click
             mediaRecorderInitialized ? null : setMediaRecorderInitialized(true);
@@ -197,14 +202,14 @@ export default function AssistantButton() {
                   }
                 };
                 //@ts-ignore
-                setMediaRecorder(newMediaRecorder);
+                mediaRecorder = newMediaRecorder;
               })
               .catch((err) =>
                 console.error("Error accessing microphone:", err)
               );
           }
 
-          if (!mediaRecorderInitialized) {
+          if (!mediaRecorderInitialized && !granted) {
             toast(
               "Please grant access to your microphone. Click the button again to speak.",
               {
@@ -237,7 +242,8 @@ export default function AssistantButton() {
                 position: "top-right",
               });
 
-          recording ? stopRecording() : startRecording();
+          // TOTAL HACK
+          recording ? stopRecording() : setTimeout(() => startRecording(), 100)
         }}
         // onClick={recording ? stopRecording : startRecording}
         className="hover:scale-105 ease-in-out duration-500 hover:cursor-pointer text-[70px]"
