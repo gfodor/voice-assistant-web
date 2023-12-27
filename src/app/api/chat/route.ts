@@ -8,15 +8,38 @@ const openai = new OpenAI({
 
 export const runtime = "edge";
 
+const threadMap = new Map();
+
 import { NextResponse } from "next/server";
 
 export async function POST(req: any) {
-  const { messages } = await req.json();
-  const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    stream: false,
-    messages,
-  });
+  let { content, thread_id } = await req.json();
 
-  return NextResponse.json(response.choices[0].message.content);
+  if (!thread_id) {
+    thread_id = (await openai.beta.threads.create()).id;
+  }
+
+  await openai.beta.threads.messages.create(thread_id, { role: "user", content })
+
+  let run = await openai.beta.threads.runs.create(thread_id, { assistant_id: "asst_NjKxDodlDYJrchNdqWVa2NSW" })
+
+  while (run.status !== "failed" && run.status !== "completed" && run.status !== "expired") {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    run = await openai.beta.threads.runs.retrieve(thread_id, run.id);
+  }
+
+  const runStepId = (await openai.beta.threads.runs.steps.list(thread_id, run.id)).data[0].id;
+
+  const step = (await openai.beta.threads.runs.steps.retrieve(thread_id, run.id, runStepId));
+  let message = ""
+
+  if (step.step_details.type == "message_creation") {
+    const messageId = step.step_details.message_creation.message_id;
+    const messageData = await openai.beta.threads.messages.retrieve(thread_id, messageId)
+
+    // @ts-ignore
+    message = messageData.content[0].text.value;
+  }
+
+  return NextResponse.json({ thread_id: thread_id,  message});
 }

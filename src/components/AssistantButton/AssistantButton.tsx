@@ -6,6 +6,8 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
+let threadId = ""
+
 // This is the main component of our application
 export default function AssistantButton() {
   const [mediaRecorderInitialized, setMediaRecorderInitialized] =
@@ -20,8 +22,7 @@ export default function AssistantButton() {
   const playAudio = async (input: string) => {
     const CHUNK_SIZE = 1024;
     const url =
-      "https://api.elevenlabs.io/v1/text-to-speech/nWM88eUzTWbyiJW1K8NX/stream";
-    // 'https://api.elevenlabs.io/v1/text-to-speech/a2uc8mOUbUDoGMdeJwH0/stream';
+      "https://api.elevenlabs.io/v1/text-to-speech/OhAFb7etDtNIIxEeb6D9/stream";
     const headers = {
       Accept: "audio/mpeg",
       "Content-Type": "application/json",
@@ -177,17 +178,17 @@ export default function AssistantButton() {
                       console.timeEnd("Speech to Text");
 
                       // Get LLM completion
-                      const completion = await axios.post("/api/chat", {
-                        messages: [
-                          {
-                            role: "user",
-                            content: `${data.result} Your answer has to be as consise as possible.`,
-                          },
-                        ],
+                      const res = await axios.post("/api/chat", {
+                        content: `${data.result} Your answer has to be as consise as possible.`,
+                        thread_id: threadId
                       });
+                      console.log("Got", res)
+                      console.log("set thread id", res.data.thread_id)
+
+                      threadId = res.data.thread_id
 
                       // Convert to speech
-                      handlePlayButtonClick(completion.data);
+                      handlePlayButtonClick(res.data.message);
                     };
                   } catch (error) {
                     console.error(error);
